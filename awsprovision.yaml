@@ -1,0 +1,60 @@
+# Launch instances, runs some tasks and then stop them
+
+- name: Provisioning EC2 Ubuntu Server
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+# Configuration variables to launch
+  vars:
+    ami: ami-d448e4bb
+    instance_type: t2.large
+    instance_count: 1
+    subnet_id: subnet-e47ade8f
+    region: eu-central-1
+    tag_name: Ubuntu14.04
+    security_group_id: sg-4863de22
+    keyname: "mpac-k8s"   # User keypair
+
+  tasks:
+  - name: "Create EC2 keys"
+    ec2_key:
+      name: mpac-k8s
+      region: "{{ region }}"
+    register: ec2_key
+  - name: "Save EC2 key"
+    copy:
+      content: "{{ ec2_key.key.private_key }}"
+      dest: "./mpac-k8s.pem"
+      mode: 0600
+    when: ec2_key.changed
+
+  - name: Creating instance
+    ec2:
+      image: "{{ ami }}"
+      instance_type: "{{ instance_type }}"
+      count: "{{ instance_count }}"
+      vpc_subnet_id: "{{ subnet_id }}"
+      region: "{{ region }}"
+      instance_tags:
+          Name: "{{ tag_name }}"
+      group_id: "{{ security_group_id }}"
+      assign_public_ip: yes
+      key_name: "{{ keyname }}"
+      wait: yes
+    register: ec2
+
+  - name: Add instance public IP to host group
+    add_host:
+      hostname={{ item.public_ip }}
+      groups=ec2hosts
+    with_items: "{{ ec2.instances }}"
+
+  - name: Wait for SSH to come up
+    wait_for:
+      host: "{{ item.public_dns_name }}"
+      port: 22
+      delay: 30
+      timeout: 320
+      state: started
+    with_items: "{{ ec2.instances }}"
