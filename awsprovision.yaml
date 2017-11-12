@@ -18,8 +18,8 @@
   tasks:
   - name: "Create EC2 keys"
     ec2_key:
-      aws_access_key: "{{ec2_access_key}}"
-      aws_secret_key: "{{ec2_secret_key}}"
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
       name: mpac-k8s
       region: "{{ region }}"
     register: ec2_key
