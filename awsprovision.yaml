@@ -1,8 +1,7 @@
 # Launch instances, runs some tasks and then stop them
 
 - name: Provisioning EC2 Ubuntu Server
-  hosts: localhost
-  connection: local
+  hosts: 192.168.1.100
   gather_facts: False
 
 # Configuration variables to launch
